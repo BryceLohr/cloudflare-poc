@@ -75,9 +75,37 @@ by this server binary is "...".
 
 Use the date the error names.
 
-**npm 10.9.x crashes** on this dependency graph with
-`Cannot read properties of null (reading 'edgesOut')`. Use `--legacy-peer-deps`,
-or npm 12. The resolved tree is correct either way.
+**npm 10.9.x crashes** on this dependency graph:
+
+```
+npm error Cannot read properties of null (reading 'edgesOut')
+```
+
+The image ships npm 10.9.7, which hits this on a plain `npm install`. Fixed in
+npm 12 — run it without installing it globally:
+
+```sh
+npx -y npm@12 install
+```
+
+Do **not** `npm install -g npm@12`. It fails partway through replacing its own
+files with `Cannot find module 'promise-retry'`, leaving npm 10.9.7 still in
+place. That error is npm clobbering itself mid-upgrade, not a broken image —
+the module is present.
+
+`--legacy-peer-deps` also works around the crash on 10.9.7 and resolves the same
+tree, but npm 12 is the real fix and produces a clean lockfile.
+
+**npm 12 blocks postinstall scripts by default.** You will see:
+
+```
+npm warn install-scripts 3 packages had install scripts blocked
+  esbuild, workerd
+```
+
+Harmless here — both ship prebuilt platform binaries as optional dependencies,
+so `workerd` and `esbuild` work without their postinstall. Other packages may
+genuinely need `npm install-scripts approve <pkg>`.
 
 **`@cloudflare/vitest-pool-workers` 0.22 removed the `/config` subpath.**
 `defineWorkersConfig` is gone; configuration is now a Vite plugin:
